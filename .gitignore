@@ -1,0 +1,53 @@
+# Outputs de Vivado / Vitis (pesados, no van a git)
+build/
+*.jou
+*.log
+*.backup.log
+*.backup.jou
+.Xil/
+*.xpr
+*.cache/
+*.runs/
+*.ip_user_files/
+*.gen/
+*.hw/
+*.sim/
+*.srcs/
+xsim.dir/
+*.wdb
+*.wcfg
+webtalk*.log
+hd_visual/
+*.str
+
+# Vitis platform / overlay build
+**/binary_container_1/
+**/_x/
+**/_build/
+**/sd_card/
+**/vplnx.cfg
+
+# Imágenes PYNQ
+pynq-image-cache/
+*.img
+*.img.zip
+*.img.xz
+
+# Modelos pesados (en función del tamaño los gestionamos con git-lfs)
+*.xmodel
+*.elf
+models/**/*.bin
+
+# Python / Jupyter
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+.venv/
+venv/
+
+# Editor / OS
+.vscode/
+.idea/
+.DS_Store
+*.swp
+*~
