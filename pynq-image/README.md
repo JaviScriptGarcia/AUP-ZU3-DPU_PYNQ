@@ -1,79 +1,106 @@
-# Preparación de la SD con PYNQ 3.1.1
+# PYNQ 3.1.1 SD card preparation
 
-## Imagen oficial AUP-ZU3 8 GB
+## Official AUP-ZU3 8 GB image
 
 URL: `https://download.amd.com/opendownload/pynq/AUP-ZU3-3.1.1-8gb.zip`
 
-Tamaño aproximado: 6 GB comprimido / ~16 GB descomprimido.
+Sizes: ~2.1 GB compressed / ~9.1 GB decompressed.
 
-## Descarga
+## Download
 
 ```bash
 cd /tools2/AUPZU3-DPU_PYNQ/pynq-image-cache
 wget https://download.amd.com/opendownload/pynq/AUP-ZU3-3.1.1-8gb.zip
 unzip AUP-ZU3-3.1.1-8gb.zip
-# debería aparecer un AUP-ZU3-3.1.1-8gb.img (o similar)
+# an AUP-ZU3-3.1.1-8gb.img (~9.1 GB) should appear
 ```
 
-## Flasheo a microSD
+## Flashing to microSD
 
-Necesaria microSD de **16 GB o más**, según doc oficial.
+microSD of **16 GB or more** required (per official documentation).
 
-Recomendado usar `dd` (Etcher también vale).
+Either `dd` or Balena Etcher will produce an identical result. The
+official documentation recommends Etcher; we used `dd` here.
 
-**Identifica primero el dispositivo correcto:**
+**Identify the correct device first:**
 ```bash
 lsblk -o NAME,SIZE,TYPE,MOUNTPOINT,MODEL
 ```
 
-Busca la microSD (debería ser `/dev/sdX`, NO el disco del sistema).
+Find the microSD (should be `/dev/sdX`, NOT the system disk).
 
 ```bash
-# CON CUIDADO. Cambia sdX por el dispositivo correcto.
-sudo umount /dev/sdX*    # por si hay particiones montadas
+# CAREFULLY. Replace sdX with the correct device.
+sudo umount /dev/sdX*
 sudo dd if=AUP-ZU3-3.1.1-8gb.img of=/dev/sdX bs=4M status=progress conv=fsync
 sync
 ```
 
-Tarda ~10-20 min según velocidad de la SD.
+Takes ~10-15 min depending on SD speed.
 
-## Boot en la placa
+## Boot on the board
 
-1. Insertar SD en el socket microSD de la AUP-ZU3.
-2. **Switch BOOT en posición "SD"**.
-3. Conectar USB-C "EXT PWR" (alimentación).
-4. (Para acceso) conectar USB-C "PROG UART" al ordenador.
-5. Encender.
+1. Insert the SD card into the AUP-ZU3 microSD socket.
+2. **BOOT switch in "SD" position**.
+3. Connect the USB-C "EXT PWR" cable.
+4. (For UART access) connect the USB-C "PROG UART" cable.
+5. Power on.
 
-Tras ~30-60 s la placa habrá arrancado.
+After ~15-60 s the board has booted.
 
-## Acceso
+## Access
 
-### Vía Ethernet Gadget (USB-C "PROG UART")
+### Via USB Ethernet adapter on USB3 port
 
-La placa se presenta como interfaz Ethernet sobre USB.
+Plug a USB Ethernet adapter into one of the board's USB3-A ports and
+connect an Ethernet cable from there to a router. The board picks up
+an IP via DHCP.
 
-- IP de la placa: `192.168.3.1`
-- Jupyter Lab: `http://192.168.3.1/lab` — password: `xilinx`
-- SSH: `ssh xilinx@192.168.3.1` — password: `xilinx`
+To find the IP: open a serial terminal (`sudo picocom -b 115200
+/dev/ttyUSB1`) and run `ip a show eth0`.
 
-### Vía red cableada (Ethernet RJ45) — opcional
+```bash
+ssh xilinx@<board-IP>      # password: xilinx
+```
 
-La placa pide IP por DHCP. Para saber qué IP le ha dado el router,
-mirar el dashboard del router o usar `nmap`.
+### Via Ethernet Gadget (USB-C to USB-C between host and board)
 
-## Verificación rápida
+If the host has a USB-C port and you connect host-to-board with a
+USB-C-to-USB-C cable, a USB Ethernet Gadget interface appears on the
+host and the board is reachable at `192.168.3.1`. Untested in our
+setup; we used the USB Ethernet adapter route.
 
-Desde un notebook nuevo en Jupyter:
+### Jupyter Lab
+
+```
+http://<board-IP>/lab
+```
+Password: `xilinx`.
+
+## Quick verification
+
+From a fresh notebook in Jupyter (or via SSH):
 
 ```python
 import pynq
-print(pynq.__version__)              # esperado: 3.1.1
-print(pynq.PL.bitfile_name)          # nombre del overlay base cargado
-
-from pynq.overlays.base import BaseOverlay
-overlay = BaseOverlay("base.bit")
-print(overlay.ip_dict.keys())        # IPs disponibles en el overlay
+print(pynq.__version__)              # expected: 3.1
 ```
 
-Si esto no falla, **v0.1-pynq-vanilla** está cumplida.
+```bash
+cat /etc/os-release | head -3        # expected: PynqLinux 3.0 (Carlisle)
+df -h /                              # expected: ext4 ~116 GB mounted on /
+```
+
+If these succeed, **v0.1-pynq-vanilla is met**.
+
+## Clean shutdown
+
+**Never** power off via the switch while the board is running.
+Always:
+
+```bash
+sudo poweroff
+```
+
+Wait for the prompt to disappear from UART before flipping the
+power switch.
